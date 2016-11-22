@@ -4,26 +4,24 @@ namespace Baconx
 {
     public partial class App : Application
     {
+        public static App Instance;
+
         public App()
         {
+            Instance = this;
+            ViewModelBase.Init();
+
             InitializeComponent();
+            InitializeNavigation();
 
-            MainPage = new BaconxPage();
+            MainPage = new NavigationPage(new MainPage());
         }
 
-        protected override void OnStart()
+        private void InitializeNavigation()
         {
-            // Handle when your app starts
-        }
-
-        protected override void OnSleep()
-        {
-            // Handle when your app sleeps
-        }
-
-        protected override void OnResume()
-        {
-            // Handle when your app resumes
+            var navigationService = DependencyService.Get<INavigationService>();
+            navigationService.Configure("MainPage", typeof(MainPage));
+            navigationService.Configure("DetailPage", typeof(DetailPage));
         }
     }
 }
