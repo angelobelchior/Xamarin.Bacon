@@ -7,64 +7,36 @@ using Xamarin.Forms;
 
 namespace Baconx
 {
-    public static class NavigationExtensions
-    {
-        private static ConditionalWeakTable<Page, object> arguments = new ConditionalWeakTable<Page, object>();
-
-        public static object GetNavigationArgs(this Page page)
-        {
-            object argument = null;
-            arguments.TryGetValue(page, out argument);
-
-            return argument;
-        }
-
-        public static void SetNavigationArgs(this Page page, object args) => arguments.Add(page, args);
-    }
-
-    public enum NavigationBehavior
-    {
-        Default,
-        ClearBackstak
-    }
-
-    public interface INavigationService
-    {
-        Task Go(string pageKey, object parameter = null, NavigationBehavior navigationBehavior = NavigationBehavior.Default);
-        Task Back();
-        void Configure(string key, Type pageType);
-    }
-
     public class NavigationService : INavigationService
     {
-        Dictionary<string, Type> pages { get; } = new Dictionary<string, Type>();
+        Dictionary<string, Type> PagesDictionary { get; } = new Dictionary<string, Type>();
         public Page MainPage => Application.Current.MainPage;
 
         public async Task Back() => await MainPage.Navigation.PopAsync();
 
-        public void Configure(string key, Type pageType) => pages[key] = pageType;
+        public void Configure(string key, Type pageType) => PagesDictionary[key] = pageType;
 
         public async Task Go(string pageKey, object parameter = null, NavigationBehavior navigationBehavior = NavigationBehavior.Default)
         {
             Type pageType;
 
-            if (pages.TryGetValue(pageKey, out pageType))
+            if (PagesDictionary.TryGetValue(pageKey, out pageType))
             {
-                var displayPage = (Page)Activator.CreateInstance(pageType);
-                displayPage.SetNavigationArgs(parameter);
+                var page = (Page)Activator.CreateInstance(pageType);
+                page.AddNavigationArgs(parameter);
 
                 if (navigationBehavior == NavigationBehavior.ClearBackstak)
                 {
-                    MainPage.Navigation.InsertPageBefore(displayPage, MainPage.Navigation.NavigationStack[0]);
+                    MainPage.Navigation.InsertPageBefore(page, MainPage.Navigation.NavigationStack.FirstOrDefault());
 
-                    var existingPages = MainPage.Navigation.NavigationStack.ToList();
+                    var pages = MainPage.Navigation.NavigationStack.ToList();
 
-                    for (int i = 1; i < existingPages.Count; i++)
-                        MainPage.Navigation.RemovePage(existingPages[i]);
+                    for (int i = 1; i < pages.Count; i++)
+                        MainPage.Navigation.RemovePage(pages[i]);
                 }
                 else
                 {
-                    await MainPage.Navigation.PushAsync(displayPage);
+                    await MainPage.Navigation.PushAsync(page);
                 }
             }
             else
